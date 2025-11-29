@@ -1,15 +1,27 @@
+import '../widgets/player_name_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-import '../providers/auth_provider.dart';
+// import '../providers/auth_provider.dart';
+
+String? globalPlayerName;
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
+    Future<void> _requirePlayerNameAndNavigate(String route) async {
+      if (globalPlayerName == null || globalPlayerName!.isEmpty) {
+        final name = await showPlayerNameDialog(context);
+        if (name == null || name.isEmpty) return;
+        globalPlayerName = name;
+      }
+      context.go(route);
+    }
+
     return Scaffold(
       appBar: AppBar(
         toolbarHeight: 100,
@@ -91,70 +103,7 @@ class HomeScreen extends StatelessWidget {
             const SizedBox(width: 12),
           ],
         ),
-        actions: [
-          Consumer<AuthProvider>(
-            builder: (context, authProvider, child) {
-              return Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [Color(0xFFFF2D55), Color(0xFFFF6B9D)],
-                      ),
-                      borderRadius: BorderRadius.circular(20),
-                      boxShadow: [
-                        BoxShadow(
-                          color: const Color(0xFFFF2D55).withOpacity(0.5),
-                          blurRadius: 10,
-                          offset: const Offset(0, 0),
-                        ),
-                      ],
-                    ),
-                    child: Row(
-                      children: [
-                        const Icon(Icons.favorite, color: Colors.white, size: 20),
-                        const SizedBox(width: 6),
-                        Text(
-                          '${authProvider.user?.playAttempts ?? 0}',
-                          style: GoogleFonts.montserrat(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Container(
-                    decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [Color(0xFF5B4EFF), Color(0xFF9D50BB)],
-                      ),
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: const Color(0xFF5B4EFF).withOpacity(0.5),
-                          blurRadius: 10,
-                          offset: const Offset(0, 0),
-                        ),
-                      ],
-                    ),
-                    child: IconButton(
-                      icon: const Icon(Icons.logout, color: Colors.white),
-                      onPressed: () {
-                        authProvider.logout();
-                        context.go('/login');
-                      },
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                ],
-              );
-            },
-          ),
-        ],
+        actions: [],
       ),
       body: Container(
         decoration: const BoxDecoration(
@@ -169,45 +118,60 @@ class HomeScreen extends StatelessWidget {
             stops: [0.0, 0.5, 1.0],
           ),
         ),
-        child: Consumer<AuthProvider>(
-          builder: (context, authProvider, child) {
-            return ListView(
+        child: Column(
+          children: [
+            Expanded(
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(
+                    maxWidth: MediaQuery.of(context).size.width / 3 >= 300 
+                      ? MediaQuery.of(context).size.width / 3 
+                      : MediaQuery.of(context).size.width,
+                  ),
+                  child: ListView(
+                    padding: const EdgeInsets.all(24),
+                    children: [
+                      _buildMenuCard(
+                        context,
+                        'Quiz Solo',
+                        Icons.person_rounded,
+                        Colors.blue,
+                        () => _requirePlayerNameAndNavigate('/quiz?mode=single'),
+                      ),
+                      const SizedBox(height: 20),
+                      _buildMenuCard(
+                        context,
+                        'Tạo cuộc thi',
+                        Icons.add_circle_rounded,
+                        Colors.green,
+                        () => _requirePlayerNameAndNavigate('/create-room'),
+                      ),
+                      const SizedBox(height: 20),
+                      _buildMenuCard(
+                        context,
+                        'Tham gia cuộc thi',
+                        Icons.group_add_rounded,
+                        Colors.orange,
+                        () => _requirePlayerNameAndNavigate('/join-room'),
+                      ),
+                      const SizedBox(height: 20),
+                      _buildMenuCard(
+                        context,
+                        'Tài liệu tham khảo',
+                        Icons.library_books_rounded,
+                        Colors.purple,
+                        () => context.go('/documents'),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            Padding(
               padding: const EdgeInsets.all(24),
-              children: [
-                _buildMenuCard(
-                  context,
-                  'Quiz Solo',
-                  Icons.person_rounded,
-                  Colors.blue,
-                  () => context.go('/quiz?mode=single'),
-                ),
-                const SizedBox(height: 20),
-                _buildMenuCard(
-                  context,
-                  'Tạo cuộc thi',
-                  Icons.add_circle_rounded,
-                  Colors.green,
-                  () => context.go('/create-room'),
-                ),
-                const SizedBox(height: 20),
-                _buildMenuCard(
-                  context,
-                  'Tham gia cuộc thi',
-                  Icons.group_add_rounded,
-                  Colors.orange,
-                  () => context.go('/join-room'),
-                ),
-                const SizedBox(height: 20),
-                _buildMenuCard(
-                  context,
-                  'Tài liệu tham khảo',
-                  Icons.library_books_rounded,
-                  Colors.purple,
-                  () => context.go('/documents'),
-                ),
-              ],
-            );
-          },
+              child: _buildCreditSection(context),
+            ),
+          ],
         ),
       ),
     );
@@ -306,5 +270,66 @@ class HomeScreen extends StatelessWidget {
       return [const Color(0xFFFFD60A), const Color(0xFFFFA500)];
     }
     return [color, color.withOpacity(0.7)];
+  }
+
+  Widget _buildCreditSection(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.05),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: const Color(0xFF5B4EFF).withOpacity(0.3),
+          width: 1,
+        ),
+      ),
+      child: Column(
+        children: [
+          Text(
+            'Credits',
+            style: GoogleFonts.montserrat(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: const Color(0xFFFFD60A),
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 12),
+          Text(
+            'Ứng dụng được phát triển bởi:\n'
+            'Công an Phường An Hội Tây\n'
+            'Chi Đoàn Công An\n\n'
+            'Version 1.0.0\n'
+            '© 2025 - Bảo vệ cộng đồng khỏi lừa đảo',
+            style: GoogleFonts.montserrat(
+              fontSize: 14,
+              color: Colors.white.withOpacity(0.8),
+              height: 1.5,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 8),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.security,
+                color: const Color(0xFF00F2FF).withOpacity(0.8),
+                size: 16,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'Bảo vệ bạn khỏi các chiêu trò lừa đảo',
+                style: GoogleFonts.montserrat(
+                  fontSize: 12,
+                  color: Colors.white.withOpacity(0.6),
+                  fontStyle: FontStyle.italic,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
   }
 }

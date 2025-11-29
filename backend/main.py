@@ -230,17 +230,9 @@ def generate_room_code() -> str:
 @app.post("/api/rooms", response_model=RoomResponse)
 def create_room(
     room_data: RoomCreate,
-    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """Create a new multiplayer room"""
-    # Rate limiting
-    if not rate_limiter.is_allowed(current_user.id, max_requests=10, window=60):
-        raise HTTPException(
-            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-            detail="Too many requests. Please try again later."
-        )
-    
     # Generate unique room code
     room_code = generate_room_code()
     while db.query(Room).filter(Room.room_code == room_code).first():
@@ -248,7 +240,7 @@ def create_room(
     
     room = Room(
         room_code=room_code,
-        creator_id=current_user.id,
+        creator_id=None,  # No auth, so no creator
         max_players=min(room_data.max_players, 50),  # Cap at 50 players
         status=RoomStatus.WAITING
     )
@@ -271,7 +263,6 @@ def get_room(room_code: str, db: Session = Depends(get_db)):
 @app.post("/api/rooms/{room_code}/join")
 def join_room(
     room_code: str,
-    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """Join an existing room"""
@@ -296,18 +287,14 @@ def join_room(
 @app.post("/api/rooms/{room_code}/start")
 def start_room(
     room_code: str,
-    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """Start the game in a room (creator only)"""
+    """Start the game in a room"""
     room_code = sanitize_input(room_code, 10).upper()
     room = db.query(Room).filter(Room.room_code == room_code).first()
     
     if not room:
         raise HTTPException(status_code=404, detail="Room not found")
-    
-    if room.creator_id != current_user.id:
-        raise HTTPException(status_code=403, detail="Only room creator can start the game")
     
     if room.status != RoomStatus.WAITING:
         raise HTTPException(status_code=400, detail="Room already started or finished")
@@ -620,8 +607,12 @@ class ConnectionManager:
     
     async def broadcast(self, room_code: str, message: dict):
         if room_code in self.active_connections:
-            for websocket, _ in self.active_connections[room_code]:
-                await websocket.send_text(json.dumps(message))
+            connections = self.active_connections[room_code][:]
+            for websocket, username in connections:
+                try:
+                    await websocket.send_text(json.dumps(message))
+                except WebSocketDisconnect:
+                    await self.disconnect(room_code, websocket)
 
 
 manager = ConnectionManager()
@@ -635,7 +626,7 @@ async def websocket_endpoint(websocket: WebSocket, room_code: str, username: str
     try:
         while True:
             data = await websocket.receive_text()
-            message = json.loads(data)
+            message = json.loads(data) 
             print(f"WebSocket message received in room {room_code}: {message}")
             
             # Handle different message types
@@ -666,7 +657,7 @@ async def websocket_endpoint(websocket: WebSocket, room_code: str, username: str
                 await manager.broadcast(room_code, message)
     
     except WebSocketDisconnect:
-        manager.disconnect(room_code, websocket)
+        await manager.disconnect(room_code, websocket)
         # Broadcast updated player list after disconnect
         if room_code in manager.room_players:
             await manager.broadcast(room_code, {

@@ -92,6 +92,7 @@ class Room {
   final int currentPlayers;
   final int maxPlayers;
   final int? creatorId;
+  final String? creatorName;
   final int questionCount;
   final DateTime createdAt;
 
@@ -102,6 +103,7 @@ class Room {
     required this.currentPlayers,
     required this.maxPlayers,
     this.creatorId,
+    this.creatorName,
     this.questionCount = 10,
     required this.createdAt,
   });
@@ -114,6 +116,7 @@ class Room {
       currentPlayers: json['current_players'],
       maxPlayers: json['max_players'],
       creatorId: json['creator_id'],
+      creatorName: json['creator_name'],
       questionCount: json['question_count'] ?? 10,
       createdAt: DateTime.parse(json['created_at']),
     );
@@ -229,6 +232,37 @@ class LeaderboardEntry {
       gamesPlayed: json['games_played'],
       averageScore: json['average_score'].toDouble(),
       rank: json['rank'],
+    );
+  }
+}
+
+enum AssetType { image, video, document }
+
+class AssetItem {
+  final String id;
+  final String title;
+  final String path;
+  final AssetType type;
+  final String? description;
+  final DateTime? createdAt;
+
+  AssetItem({
+    required this.id,
+    required this.title,
+    required this.path,
+    required this.type,
+    this.description,
+    this.createdAt,
+  });
+
+  factory AssetItem.fromMap(Map<String, dynamic> map) {
+    return AssetItem(
+      id: map['id'],
+      title: map['title'],
+      path: map['path'],
+      type: AssetType.values.firstWhere((e) => e.name == map['type']),
+      description: map['description'],
+      createdAt: map['createdAt'] != null ? DateTime.parse(map['createdAt']) : null,
     );
   }
 }

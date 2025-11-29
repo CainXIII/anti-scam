@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:video_player/video_player.dart';
+import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
+import 'package:flutter/foundation.dart';
+import 'dart:ui' as ui;
 
-import '../../providers/document_provider.dart';
 import '../../models/models.dart';
 
 class DocumentListScreen extends StatefulWidget {
@@ -15,27 +17,54 @@ class DocumentListScreen extends StatefulWidget {
 }
 
 class _DocumentListScreenState extends State<DocumentListScreen> {
-  String? _selectedCategory;
+  String? _selectedType;
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
-  String _sortBy = 'latest'; // 'latest', 'popular', 'title'
-  final List<String> _categories = [
+  String _sortBy = 'title'; // 'title', 'type'
+  final List<String> _types = [
     'All',
-    'Security',
-    'Privacy',
-    'Scam Prevention',
-    'Legal',
-    'Guidelines',
+    'Image',
+    'Video',
+    'Document',
   ];
 
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final docProvider = Provider.of<DocumentProvider>(context, listen: false);
-      docProvider.fetchDocuments();
-    });
-  }
+  final List<AssetItem> _assets = [
+    AssetItem(
+      id: '1',
+      title: 'Lorem Ipsum PDF',
+      path: 'assets/pdf/lorem-ipsum.pdf',
+      type: AssetType.document,
+      description: 'Tài liệu mẫu Lorem Ipsum',
+    ),
+    AssetItem(
+      id: '2',
+      title: 'O1M EBook',
+      path: 'assets/pdf/O1M_EBook (1).pdf',
+      type: AssetType.document,
+      description: 'Sách điện tử O1M',
+    ),
+    AssetItem(
+      id: '3',
+      title: 'Video 1',
+      path: 'assets/videos/67ef2397-2c36-4698-9ac5-792782ce44d6.mp4',
+      type: AssetType.video,
+      description: 'Video cảnh báo lừa đảo',
+    ),
+    AssetItem(
+      id: '4',
+      title: 'Video 2',
+      path: 'assets/videos/b9702804-98d2-454c-8393-0b1f677c4ab3.mp4',
+      type: AssetType.video,
+      description: 'Video hướng dẫn bảo mật',
+    ),
+    AssetItem(
+      id: '5',
+      title: 'Video 3',
+      path: 'assets/videos/eb3c5bfc-39e6-41a0-911e-a3f5ce969c5c.mp4',
+      type: AssetType.video,
+      description: 'Video infographic lừa đảo',
+    ),
+  ];
 
   @override
   void dispose() {
@@ -43,26 +72,24 @@ class _DocumentListScreenState extends State<DocumentListScreen> {
     super.dispose();
   }
 
-  List<Document> _getFilteredDocuments(List<Document> documents) {
-    var filtered = documents.where((doc) {
+  List<AssetItem> _getFilteredAssets(List<AssetItem> assets) {
+    var filtered = assets.where((asset) {
       final matchesSearch = _searchQuery.isEmpty ||
-          doc.title.toLowerCase().contains(_searchQuery.toLowerCase()) ||
-          (doc.content.toLowerCase().contains(_searchQuery.toLowerCase())) ||
-          (doc.author?.toLowerCase().contains(_searchQuery.toLowerCase()) ?? false);
-      return matchesSearch;
+          asset.title.toLowerCase().contains(_searchQuery.toLowerCase()) ||
+          (asset.description?.toLowerCase().contains(_searchQuery.toLowerCase()) ?? false);
+      final matchesType = _selectedType == null || _selectedType == 'All' ||
+          asset.type.name.toLowerCase() == _selectedType!.toLowerCase();
+      return matchesSearch && matchesType;
     }).toList();
 
-    // Sort documents
+    // Sort assets
     switch (_sortBy) {
-      case 'popular':
-        filtered.sort((a, b) => b.viewsCount.compareTo(a.viewsCount));
+      case 'type':
+        filtered.sort((a, b) => a.type.name.compareTo(b.type.name));
         break;
       case 'title':
-        filtered.sort((a, b) => a.title.compareTo(b.title));
-        break;
-      case 'latest':
       default:
-        filtered.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+        filtered.sort((a, b) => a.title.compareTo(b.title));
         break;
     }
 
@@ -235,24 +262,22 @@ class _DocumentListScreenState extends State<DocumentListScreen> {
                     ),
                   ),
                   const SizedBox(width: 12),
-                  _buildSortChip('Mới nhất', 'latest'),
-                  const SizedBox(width: 8),
-                  _buildSortChip('Phổ biến', 'popular'),
-                  const SizedBox(width: 8),
                   _buildSortChip('Tên A-Z', 'title'),
+                  const SizedBox(width: 8),
+                  _buildSortChip('Loại', 'type'),
                 ],
               ),
             ),
             
-            // Category Filter
+            // Type Filter
             Container(
               padding: const EdgeInsets.all(16),
               child: SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
                 child: Row(
-                  children: _categories.map((category) {
-                    final isSelected = _selectedCategory == category || 
-                                     (_selectedCategory == null && category == 'All');
+                  children: _types.map((type) {
+                    final isSelected = _selectedType == type || 
+                                     (_selectedType == null && type == 'All');
                     return Padding(
                       padding: const EdgeInsets.only(right: 8),
                       child: Container(
@@ -276,13 +301,8 @@ class _DocumentListScreenState extends State<DocumentListScreen> {
                           child: InkWell(
                             onTap: () {
                               setState(() {
-                                _selectedCategory = category == 'All' ? null : category;
+                                _selectedType = type == 'All' ? null : type;
                               });
-                              final docProvider = Provider.of<DocumentProvider>(
-                                context, 
-                                listen: false
-                              );
-                              docProvider.fetchDocuments(category: _selectedCategory);
                             },
                             borderRadius: BorderRadius.circular(20),
                             child: Padding(
@@ -291,7 +311,7 @@ class _DocumentListScreenState extends State<DocumentListScreen> {
                                 vertical: 8,
                               ),
                               child: Text(
-                                category,
+                                type,
                                 style: GoogleFonts.montserrat(
                                   color: Colors.white,
                                   fontWeight: FontWeight.w600,
@@ -307,76 +327,13 @@ class _DocumentListScreenState extends State<DocumentListScreen> {
               ),
             ),
           
-          // Document List
+          // Asset List
           Expanded(
-            child: Consumer<DocumentProvider>(
-              builder: (context, docProvider, child) {
-                if (docProvider.isLoading) {
-                  return const Center(
-                    child: CircularProgressIndicator(
-                      color: Color(0xFFFFD60A),
-                    ),
-                  );
-                }
-
-                if (docProvider.error != null) {
-                  return Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Icon(
-                          Icons.error_outline,
-                          size: 64,
-                          color: Color(0xFFFF2D55),
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          docProvider.error!,
-                          style: GoogleFonts.montserrat(
-                            fontSize: 16,
-                            color: Colors.white,
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        ElevatedButton.icon(
-                          onPressed: () => docProvider.fetchDocuments(),
-                          icon: const Icon(Icons.refresh),
-                          label: Text(
-                            'Retry',
-                            style: GoogleFonts.montserrat(),
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
-                }
-
-                if (docProvider.documents.isEmpty) {
-                  return Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Icon(
-                          Icons.description_outlined,
-                          size: 64,
-                          color: Color(0xFFFFD60A),
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          'No documents available',
-                          style: GoogleFonts.montserrat(
-                            fontSize: 16,
-                            color: Colors.white70,
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
-                }
-
-                final filteredDocs = _getFilteredDocuments(docProvider.documents);
+            child: Builder(
+              builder: (context) {
+                final filteredAssets = _getFilteredAssets(_assets);
                 
-                if (filteredDocs.isEmpty) {
+                if (filteredAssets.isEmpty) {
                   return Center(
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
@@ -401,10 +358,10 @@ class _DocumentListScreenState extends State<DocumentListScreen> {
                 
                 return ListView.builder(
                   padding: const EdgeInsets.all(16),
-                  itemCount: filteredDocs.length,
+                  itemCount: filteredAssets.length,
                   itemBuilder: (context, index) {
-                    final doc = filteredDocs[index];
-                    return _buildDocumentCard(context, doc, index);
+                    final asset = filteredAssets[index];
+                    return _buildAssetCard(context, asset, index);
                   },
                 );
               },
@@ -416,7 +373,7 @@ class _DocumentListScreenState extends State<DocumentListScreen> {
     );
   }
 
-  Widget _buildDocumentCard(BuildContext context, Document doc, int index) {
+  Widget _buildAssetCard(BuildContext context, AssetItem asset, int index) {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
@@ -442,7 +399,7 @@ class _DocumentListScreenState extends State<DocumentListScreen> {
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          onTap: () => context.go('/documents/${doc.id}'),
+          onTap: () => _showAssetDialog(context, asset),
           borderRadius: BorderRadius.circular(16),
           child: Padding(
             padding: const EdgeInsets.all(16),
@@ -459,18 +416,20 @@ class _DocumentListScreenState extends State<DocumentListScreen> {
                     ),
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: doc.thumbnailUrl != null
+                  child: asset.type == AssetType.image
                       ? ClipRRect(
                           borderRadius: BorderRadius.circular(12),
-                          child: Image.network(
-                            doc.thumbnailUrl!,
+                          child: Image.asset(
+                            asset.path,
                             fit: BoxFit.cover,
                             errorBuilder: (context, error, stackTrace) =>
-                                const Icon(Icons.description, size: 40, color: Colors.white),
+                                const Icon(Icons.image, size: 40, color: Colors.white),
                           ),
                         )
-                      : const Icon(
-                          Icons.description,
+                      : Icon(
+                          asset.type == AssetType.video
+                              ? Icons.video_file
+                              : Icons.description,
                           size: 40,
                           color: Colors.white,
                         ),
@@ -484,7 +443,7 @@ class _DocumentListScreenState extends State<DocumentListScreen> {
                     children: [
                       // Title
                       Text(
-                        doc.title,
+                        asset.title,
                         style: GoogleFonts.montserrat(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
@@ -495,62 +454,42 @@ class _DocumentListScreenState extends State<DocumentListScreen> {
                       ),
                       const SizedBox(height: 8),
                       
-                      // Author
-                      Row(
-                        children: [
-                          const Icon(Icons.person, size: 16, color: Color(0xFFFFD60A)),
-                          const SizedBox(width: 4),
-                          Text(
-                            doc.author ?? 'Unknown',
-                            style: GoogleFonts.montserrat(
-                              fontSize: 14,
-                              color: Colors.white70,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 4),
-                      
-                      // Category
-                      if (doc.category != null)
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 4,
-                          ),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF00F2FF).withOpacity(0.2),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                              color: const Color(0xFF00F2FF).withOpacity(0.5),
-                              width: 1,
-                            ),
-                          ),
-                          child: Text(
-                            doc.category!,
-                            style: GoogleFonts.montserrat(
-                              fontSize: 12,
-                              color: const Color(0xFF00F2FF),
-                              fontWeight: FontWeight.w600,
-                            ),
+                      // Type
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF00F2FF).withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: const Color(0xFF00F2FF).withOpacity(0.5),
+                            width: 1,
                           ),
                         ),
+                        child: Text(
+                          asset.type.name.toUpperCase(),
+                          style: GoogleFonts.montserrat(
+                            fontSize: 12,
+                            color: const Color(0xFF00F2FF),
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
                       const SizedBox(height: 4),
                       
-                      // Views count
-                      Row(
-                        children: [
-                          const Icon(Icons.visibility, size: 16, color: Color(0xFFFFD60A)),
-                          const SizedBox(width: 4),
-                          Text(
-                            '${doc.viewsCount} views',
-                            style: GoogleFonts.montserrat(
-                              fontSize: 12,
-                              color: Colors.white70,
-                            ),
+                      // Description
+                      if (asset.description != null)
+                        Text(
+                          asset.description!,
+                          style: GoogleFonts.montserrat(
+                            fontSize: 14,
+                            color: Colors.white70,
                           ),
-                        ],
-                      ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
                     ],
                   ),
                 ),
@@ -577,6 +516,89 @@ class _DocumentListScreenState extends State<DocumentListScreen> {
     ).animate()
       .fadeIn(duration: 400.ms, delay: Duration(milliseconds: index * 50))
       .slideX(begin: 0.1, end: 0);
+  }
+
+  void _showAssetDialog(BuildContext context, AssetItem asset) {
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        backgroundColor: const Color(0xFF0F0F1A),
+        insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            maxWidth: MediaQuery.of(context).size.width * 0.9,
+            maxHeight: MediaQuery.of(context).size.height * 0.8,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Title
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Text(
+                  asset.title,
+                  style: GoogleFonts.montserrat(color: Colors.white, fontSize: 18),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+              // Content
+              Flexible(
+                child: _buildAssetViewer(asset),
+              ),
+              // Actions
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: Text(
+                    'Đóng',
+                    style: GoogleFonts.montserrat(color: const Color(0xFFFFD60A)),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAssetViewer(AssetItem asset) {
+    switch (asset.type) {
+      case AssetType.image:
+        return LayoutBuilder(
+          builder: (context, constraints) {
+            double maxWidth = constraints.maxWidth;
+            double maxHeight = constraints.maxHeight;
+            return SizedBox(
+              width: maxWidth,
+              height: maxHeight > 400 ? 400 : maxHeight,
+              child: Image.asset(
+                asset.path,
+                fit: BoxFit.contain,
+                errorBuilder: (context, error, stackTrace) =>
+                    const Icon(Icons.image, size: 100, color: Colors.white),
+              ),
+            );
+          },
+        );
+      case AssetType.video:
+        return _VideoPlayerWidget(assetPath: asset.path);
+      case AssetType.document:
+        return LayoutBuilder(
+          builder: (context, constraints) {
+            double maxHeight = constraints.maxHeight;
+            return SizedBox(
+              height: maxHeight > 500 ? 500 : maxHeight,
+              child: SfPdfViewer.asset(
+                asset.path,
+                enableDoubleTapZooming: true,
+                enableTextSelection: true,
+              ),
+            );
+          },
+        );
+    }
   }
 
   Widget _buildSortChip(String label, String value) {
@@ -622,6 +644,139 @@ class _DocumentListScreenState extends State<DocumentListScreen> {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _VideoPlayerWidget extends StatefulWidget {
+  final String assetPath;
+
+  const _VideoPlayerWidget({required this.assetPath});
+
+  @override
+  State<_VideoPlayerWidget> createState() => _VideoPlayerWidgetState();
+}
+
+class _VideoPlayerWidgetState extends State<_VideoPlayerWidget> {
+  late VideoPlayerController _controller;
+  bool _isInitialized = false;
+  String? _errorMessage;
+
+  @override
+  void initState() {
+    super.initState();
+    _initializeVideo();
+  }
+
+  void _initializeVideo() async {
+    try {
+      if (kIsWeb) {
+        // For web, use network controller with asset URL
+        final videoUrl = Uri.base.resolve(widget.assetPath).toString();
+        _controller = VideoPlayerController.network(videoUrl);
+      } else {
+        // For mobile, use asset controller
+        _controller = VideoPlayerController.asset(widget.assetPath);
+      }
+      await _controller.initialize();
+      if (mounted) {
+        setState(() {
+          _isInitialized = true;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _errorMessage = 'Không thể tải video: $e';
+        });
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_errorMessage != null) {
+      return Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.error, size: 50, color: Colors.red),
+            const SizedBox(height: 8),
+            Text(
+              _errorMessage!,
+              style: GoogleFonts.montserrat(color: Colors.white, fontSize: 14),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (!_isInitialized) {
+      return const Center(
+        child: CircularProgressIndicator(
+          color: Color(0xFFFFD60A),
+        ),
+      );
+    }
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        double maxWidth = constraints.maxWidth;
+        double maxHeight = constraints.maxHeight - 60; // Reserve space for controls
+        double aspectRatio = _controller.value.aspectRatio;
+
+        double videoWidth = maxWidth;
+        double videoHeight = videoWidth / aspectRatio;
+
+        if (videoHeight > maxHeight) {
+          videoHeight = maxHeight;
+          videoWidth = videoHeight * aspectRatio;
+        }
+
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            SizedBox(
+              width: videoWidth,
+              height: videoHeight,
+              child: VideoPlayer(_controller),
+            ),
+            const SizedBox(height: 8),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                IconButton(
+                  icon: Icon(
+                    _controller.value.isPlaying ? Icons.pause : Icons.play_arrow,
+                    color: const Color(0xFFFFD60A),
+                  ),
+                  onPressed: () {
+                    setState(() {
+                      _controller.value.isPlaying
+                          ? _controller.pause()
+                          : _controller.play();
+                    });
+                  },
+                ),
+                IconButton(
+                  icon: const Icon(Icons.replay, color: Color(0xFFFFD60A)),
+                  onPressed: () {
+                    _controller.seekTo(Duration.zero);
+                    _controller.play();
+                  },
+                ),
+              ],
+            ),
+          ],
+        );
+      },
     );
   }
 }

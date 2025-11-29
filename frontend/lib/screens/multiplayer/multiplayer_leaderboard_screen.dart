@@ -1,3 +1,4 @@
+import '../home_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_animate/flutter_animate.dart';
@@ -6,7 +7,7 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../providers/room_provider.dart';
-import '../../providers/auth_provider.dart';
+// import '../../providers/auth_provider.dart';
 
 class MultiplayerLeaderboardScreen extends StatefulWidget {
   final String roomCode;
@@ -44,12 +45,12 @@ class _MultiplayerLeaderboardScreenState extends State<MultiplayerLeaderboardScr
     _hasSubmittedScore = true;
 
     final roomProvider = Provider.of<RoomProvider>(context, listen: false);
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final playerName = globalPlayerName ?? 'Unknown';
 
     // Send score to other players via WebSocket
     roomProvider.sendMessage({
       'type': 'player_finished',
-      'username': authProvider.user?.username ?? 'Unknown',
+      'username': playerName,
       'score': widget.myScore,
       'correctAnswers': widget.myCorrectAnswers,
       'timeTaken': widget.myTimeTaken,
@@ -61,7 +62,7 @@ class _MultiplayerLeaderboardScreenState extends State<MultiplayerLeaderboardScr
       final leaderboard = roomProvider.leaderboard;
       if (leaderboard.isNotEmpty && 
           leaderboard[0]['username'] != null &&
-          leaderboard[0]['username'] == authProvider.user?.username) {
+          leaderboard[0]['username'] == playerName) {
         _confettiController.play();
       }
     }
@@ -140,7 +141,7 @@ class _MultiplayerLeaderboardScreenState extends State<MultiplayerLeaderboardScr
             child: Consumer<RoomProvider>(
               builder: (context, roomProvider, child) {
                 final leaderboard = roomProvider.leaderboard;
-                final currentUsername = Provider.of<AuthProvider>(context, listen: false).user?.username;
+                final currentUsername = globalPlayerName ?? 'Unknown';
                 final allPlayersFinished = roomProvider.allPlayersFinished;
 
                 return Column(

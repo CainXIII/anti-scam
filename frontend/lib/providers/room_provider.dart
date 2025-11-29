@@ -15,6 +15,7 @@ class RoomProvider extends ChangeNotifier {
   String? _error;
   Function(String, int)? _onGameStarted;
   int _expectedPlayers = 0;
+  int _questionCount = 10;
 
   Room? get currentRoom => _currentRoom;
   List<Map<String, dynamic>> get players => _players;
@@ -22,14 +23,14 @@ class RoomProvider extends ChangeNotifier {
   bool get isConnected => _isConnected;
   String? get error => _error;
   bool get allPlayersFinished => _expectedPlayers > 0 && _leaderboard.length >= _expectedPlayers;
+  int get questionCount => _questionCount;
 
-  Future<Room?> createRoom(String token, {int maxPlayers = 10}) async {
+  Future<Room?> createRoom({int maxPlayers = 10, int questionCount = 10}) async {
     try {
       final response = await http.post(
         Uri.parse(ApiConfig.rooms),
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
         },
         body: jsonEncode({'max_players': maxPlayers}),
       );
@@ -37,8 +38,7 @@ class RoomProvider extends ChangeNotifier {
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         _currentRoom = Room.fromJson(data);
-        // Add creator as first player (mock until WebSocket is implemented)
-        _players = [];
+        _questionCount = questionCount;
         notifyListeners();
         return _currentRoom;
       } else {
@@ -53,24 +53,8 @@ class RoomProvider extends ChangeNotifier {
     }
   }
 
-  Future<bool> joinRoom(String token, String roomCode) async {
+  Future<bool> joinRoom(String roomCode) async {
     try {
-      // TODO: Replace with actual API calls when backend is ready
-      // For now, create mock room
-      _currentRoom = Room(
-        id: roomCode.hashCode,
-        roomCode: roomCode,
-        status: 'waiting',
-        currentPlayers: 2,
-        maxPlayers: 4,
-        creatorId: null,
-        createdAt: DateTime.now(),
-      );
-      
-      notifyListeners();
-      return true;
-      
-      /* Uncomment when backend is ready:
       // Get room details
       final roomResponse = await http.get(
         Uri.parse('${ApiConfig.rooms}/$roomCode'),
@@ -79,6 +63,7 @@ class RoomProvider extends ChangeNotifier {
       if (roomResponse.statusCode == 200) {
         final roomData = jsonDecode(roomResponse.body);
         _currentRoom = Room.fromJson(roomData);
+        _questionCount = 10; // Default for joined rooms
       } else {
         _error = 'Room not found';
         notifyListeners();
@@ -88,9 +73,6 @@ class RoomProvider extends ChangeNotifier {
       // Join room
       final joinResponse = await http.post(
         Uri.parse('${ApiConfig.rooms}/$roomCode/join'),
-        headers: {
-          'Authorization': 'Bearer $token',
-        },
       );
 
       if (joinResponse.statusCode == 200) {
@@ -101,7 +83,6 @@ class RoomProvider extends ChangeNotifier {
         notifyListeners();
         return false;
       }
-      */
     } catch (e) {
       _error = 'Network error: $e';
       notifyListeners();
@@ -109,10 +90,10 @@ class RoomProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> connectToRoom(String token, String roomCode, String username, {bool isCreator = false}) async {
+  Future<void> connectToRoom(String roomCode, String username, {bool isCreator = false}) async {
     if (!isCreator) {
       // Join the room via API if not creator
-      final success = await joinRoom(token, roomCode);
+      final success = await joinRoom(roomCode);
       if (!success) return;
     }
     
@@ -172,7 +153,7 @@ class RoomProvider extends ChangeNotifier {
     }
   }
 
-  void connectWebSocket(String roomCode, String username) {
+  void connectWebSocket(String roomCode, String username, {bool isHost = false}) {
     try {
       _channel = WebSocketChannel.connect(
         Uri.parse(ApiConfig.roomWebSocket(roomCode)),
@@ -186,6 +167,8 @@ class RoomProvider extends ChangeNotifier {
         'username': username,
         'player_count': (_currentRoom?.currentPlayers ?? 0) + 1,
       });
+
+      // TODO: Wait for backend to send players_updated message
 
       // Listen to messages
       _channel!.stream.listen(

@@ -7,12 +7,13 @@ import 'package:google_fonts/google_fonts.dart';
 import 'dart:math';
 
 import '../../providers/game_provider.dart';
-import '../../providers/auth_provider.dart';
+// import '../../providers/auth_provider.dart';
 import '../../providers/room_provider.dart';
 import '../../models/models.dart';
 
 class CreateRoomScreen extends StatefulWidget {
-  const CreateRoomScreen({super.key});
+  final String playerName;
+  const CreateRoomScreen({super.key, required this.playerName});
 
   @override
   State<CreateRoomScreen> createState() => _CreateRoomScreenState();
@@ -37,32 +38,27 @@ class _CreateRoomScreenState extends State<CreateRoomScreen> {
 
     try {
       final roomProvider = Provider.of<RoomProvider>(context, listen: false);
-      final authProvider = Provider.of<AuthProvider>(context, listen: false);
-      final roomCode = _generateRoomCode();
+      final room = await roomProvider.createRoom(maxPlayers: _maxPlayers, questionCount: _questionCount);
 
-      // Create mock room for now (until backend API is ready)
-      final mockRoom = Room(
-        id: DateTime.now().millisecondsSinceEpoch,
-        roomCode: roomCode,
-        status: 'waiting',
-        currentPlayers: 1,
-        maxPlayers: _maxPlayers,
-        creatorId: authProvider.user?.id,
-        questionCount: _questionCount,
-        createdAt: DateTime.now(),
-      );
-      
-      roomProvider.setCurrentRoom(mockRoom);
-
-      if (mounted) {
+      if (room != null && mounted) {
         // Navigate to room lobby
-        context.go('/room-lobby/$roomCode');
+        context.go('/room-lobby/${room.roomCode}', extra: {
+          'isCreator': true,
+          'playerName': widget.playerName,
+          'questionCount': _questionCount,
+        });
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Không thể tạo phòng. Vui lòng thử lại.')),
+          );
+        }
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to create room: $e'),
+            content: Text('Lỗi tạo phòng: $e'),
             backgroundColor: const Color(0xFFFF2D55),
           ),
         );

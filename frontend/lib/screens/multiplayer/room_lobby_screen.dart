@@ -1,3 +1,4 @@
+import '../home_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -6,15 +7,19 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../providers/game_provider.dart';
-import '../../providers/auth_provider.dart';
+// import '../../providers/auth_provider.dart';
 import '../../providers/room_provider.dart';
 
 class RoomLobbyScreen extends StatefulWidget {
   final String roomCode;
+  final String playerName;
+  final bool isCreator;
 
   const RoomLobbyScreen({
     super.key,
     required this.roomCode,
+    required this.playerName,
+    required this.isCreator,
   });
 
   @override
@@ -32,33 +37,18 @@ class _RoomLobbyScreenState extends State<RoomLobbyScreen> {
   }
 
   Future<void> _initializeRoom() async {
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
     final roomProvider = Provider.of<RoomProvider>(context, listen: false);
     
-    if (authProvider.token != null && authProvider.user != null) {
-      // Check if user is creator (room was just created)
-      final isCreator = roomProvider.currentRoom != null;
-      
-      // Connect to room and add user to players list
-      await roomProvider.connectToRoom(
-        authProvider.token!, 
-        widget.roomCode,
-        authProvider.user!.username,
-        isCreator: isCreator,
-      );
-      
-      // Listen for game start event
-      roomProvider.addGameStartListener((roomCode, questionCount) {
-        print('Game start listener triggered for room: $roomCode, questions: $questionCount');
-        if (mounted && roomCode == widget.roomCode) {
-          print('Navigating to quiz screen...');
-          context.go('/quiz?mode=multiplayer&roomCode=$roomCode&questionCount=$questionCount');
-        } else {
-          print('Not navigating: mounted=$mounted, roomCode match=${roomCode == widget.roomCode}');
-        }
-      });
-    }
-    
+    // Set up game start listener
+    roomProvider.addGameStartListener((roomCode, questionCount) {
+      if (mounted) {
+        context.go('/quiz?mode=multiplayer&roomCode=$roomCode&questionCount=$questionCount');
+      }
+    });
+
+    // Connect to the room
+    await roomProvider.connectToRoom(widget.roomCode, widget.playerName, isCreator: widget.isCreator);
+
     if (mounted) {
       setState(() => _isLoading = false);
     }
@@ -152,15 +142,11 @@ class _RoomLobbyScreenState extends State<RoomLobbyScreen> {
       builder: (context, roomProvider, child) {
         final players = roomProvider.players;
         final currentRoom = roomProvider.currentRoom;
-        final authProvider = Provider.of<AuthProvider>(context, listen: false);
-        final currentUsername = authProvider.user?.username ?? '';
-        
+        final currentUsername = widget.playerName;
         // Determine if current user is host
-        final isHost = currentRoom?.creatorId == authProvider.user?.id ||
-            (players.isNotEmpty && players[0]['username'] == currentUsername);
-        
+        final isHost = widget.isCreator;
         final maxPlayers = currentRoom?.maxPlayers ?? 4;
-        final questionCount = currentRoom?.questionCount ?? 10;
+        final questionCount = roomProvider.questionCount;
 
         if (_isLoading) {
           return Scaffold(
@@ -409,13 +395,10 @@ class _RoomLobbyScreenState extends State<RoomLobbyScreen> {
                         const SizedBox(height: 16),
                         Expanded(
                           child: players.isEmpty
-                              ? Center(
+                              ? const Center(
                                   child: Text(
-                                    'Đang chờ người chơi...',
-                                    style: GoogleFonts.montserrat(
-                                      color: Colors.white70,
-                                      fontSize: 14,
-                                    ),
+                                    'Backend not implemented yet. No players.',
+                                    style: TextStyle(color: Colors.white70),
                                   ),
                                 )
                               : ListView.builder(

@@ -3,13 +3,13 @@ import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-import 'providers/auth_provider.dart';
+// import 'providers/auth_provider.dart';
 import 'providers/game_provider.dart';
 import 'providers/room_provider.dart';
 import 'providers/document_provider.dart';
 import 'screens/splash_screen.dart';
-import 'screens/auth/login_screen.dart';
-import 'screens/auth/register_screen.dart';
+// import 'screens/auth/login_screen.dart';
+// import 'screens/auth/register_screen.dart';
 import 'screens/home_screen.dart';
 import 'screens/game/quiz_screen.dart';
 import 'screens/game/result_screen.dart';
@@ -31,80 +31,54 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => AuthProvider()),
         ChangeNotifierProvider(create: (_) => GameProvider()),
         ChangeNotifierProvider(create: (_) => RoomProvider()),
         ChangeNotifierProvider(create: (_) => DocumentProvider()),
       ],
-      child: Consumer<AuthProvider>(
-        builder: (context, authProvider, _) {
-          return MaterialApp.router(
-            title: 'Quiz Game - Educational Edition',
-            debugShowCheckedModeBanner: false,
-            theme: ThemeData(
-              colorScheme: ColorScheme.fromSeed(
-                seedColor: const Color(0xFF2196F3),
-                brightness: Brightness.light,
+      child: MaterialApp.router(
+        title: 'Quiz Game - Educational Edition',
+        debugShowCheckedModeBanner: false,
+        theme: ThemeData(
+          colorScheme: ColorScheme.fromSeed(
+            seedColor: const Color(0xFF2196F3),
+            brightness: Brightness.light,
+          ),
+          textTheme: GoogleFonts.robotoTextTheme(),
+          useMaterial3: true,
+          cardTheme: CardThemeData(
+            elevation: 4,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+          ),
+          elevatedButtonTheme: ElevatedButtonThemeData(
+            style: ElevatedButton.styleFrom(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 32,
+                vertical: 16,
               ),
-              textTheme: GoogleFonts.robotoTextTheme(),
-              useMaterial3: true,
-              cardTheme: CardThemeData(
-                elevation: 4,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                ),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
               ),
-              elevatedButtonTheme: ElevatedButtonThemeData(
-                style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 32,
-                    vertical: 16,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  textStyle: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
+              textStyle: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
               ),
             ),
-            routerConfig: _router(authProvider),
-          );
-        },
+          ),
+        ),
+        routerConfig: _router(),
       ),
     );
   }
 
-  GoRouter _router(AuthProvider authProvider) {
+  GoRouter _router() {
     return GoRouter(
       initialLocation: '/',
-      redirect: (context, state) {
-        final isLoggedIn = authProvider.isAuthenticated;
-        final isLoggingIn = state.matchedLocation == '/login' ||
-            state.matchedLocation == '/register';
-
-        if (!isLoggedIn && !isLoggingIn) {
-          return '/login';
-        }
-        if (isLoggedIn && isLoggingIn) {
-          return '/home';
-        }
-        return null;
-      },
       routes: [
         GoRoute(
           path: '/',
           builder: (context, state) => const SplashScreen(),
-        ),
-        GoRoute(
-          path: '/login',
-          builder: (context, state) => const LoginScreen(),
-        ),
-        GoRoute(
-          path: '/register',
-          builder: (context, state) => const RegisterScreen(),
         ),
         GoRoute(
           path: '/home',
@@ -138,24 +112,36 @@ class MyApp extends StatelessWidget {
         ),
         GoRoute(
           path: '/create-room',
-          builder: (context, state) => const CreateRoomScreen(),
+          builder: (context, state) {
+            final playerName = globalPlayerName ?? '';
+            return CreateRoomScreen(playerName: playerName);
+          },
         ),
         GoRoute(
           path: '/join-room',
-          builder: (context, state) => const JoinRoomScreen(),
+          builder: (context, state) {
+            final playerName = globalPlayerName ?? '';
+            return JoinRoomScreen(playerName: playerName);
+          },
         ),
         GoRoute(
           path: '/room/:roomCode',
           builder: (context, state) {
             final roomCode = state.pathParameters['roomCode']!;
-            return RoomLobbyScreen(roomCode: roomCode);
+            final extra = state.extra as Map<String, dynamic>? ?? {};
+            final playerName = extra['playerName'] ?? (globalPlayerName ?? '');
+            final isCreator = extra['isCreator'] ?? false;
+            return RoomLobbyScreen(roomCode: roomCode, playerName: playerName, isCreator: isCreator);
           },
         ),
         GoRoute(
           path: '/room-lobby/:roomCode',
           builder: (context, state) {
             final roomCode = state.pathParameters['roomCode']!;
-            return RoomLobbyScreen(roomCode: roomCode);
+            final extra = state.extra as Map<String, dynamic>? ?? {};
+            final playerName = extra['playerName'] ?? (globalPlayerName ?? '');
+            final isCreator = extra['isCreator'] ?? false;
+            return RoomLobbyScreen(roomCode: roomCode, playerName: playerName, isCreator: isCreator);
           },
         ),
         GoRoute(

@@ -1,3 +1,4 @@
+import '../home_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_animate/flutter_animate.dart';
@@ -7,7 +8,7 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../providers/game_provider.dart';
-import '../../providers/auth_provider.dart';
+// import '../../providers/auth_provider.dart';
 import '../../models/models.dart';
 
 class ResultScreen extends StatefulWidget {
@@ -56,8 +57,8 @@ class _ResultScreenState extends State<ResultScreen> {
 
   Future<void> _saveGameSession() async {
     // TODO: Call API to save game session
-    // This would use the AuthProvider token and send data to backend
-    print('Saving game session...');
+    // Use globalPlayerName for player identification
+    print('Saving game session for player: ${globalPlayerName ?? "Player"}');
   }
 
   Future<void> _playAudio() async {

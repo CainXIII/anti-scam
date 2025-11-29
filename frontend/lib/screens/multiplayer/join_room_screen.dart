@@ -6,9 +6,11 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../providers/game_provider.dart';
+import '../../providers/room_provider.dart';
 
 class JoinRoomScreen extends StatefulWidget {
-  const JoinRoomScreen({super.key});
+  final String playerName;
+  const JoinRoomScreen({super.key, required this.playerName});
 
   @override
   State<JoinRoomScreen> createState() => _JoinRoomScreenState();
@@ -31,21 +33,29 @@ class _JoinRoomScreenState extends State<JoinRoomScreen> {
     setState(() => _isJoining = true);
 
     try {
-      final gameProvider = Provider.of<GameProvider>(context, listen: false);
+      final roomProvider = Provider.of<RoomProvider>(context, listen: false);
       final roomCode = _roomCodeController.text.trim().toUpperCase();
 
-      // TODO: Call API to join room
-      // await gameProvider.joinRoom(roomCode: roomCode);
+      final success = await roomProvider.joinRoom(roomCode);
 
-      if (mounted) {
+      if (success && mounted) {
         // Navigate to room lobby
-        context.go('/room-lobby/$roomCode');
+        context.go('/room-lobby/$roomCode', extra: {
+          'isCreator': false,
+          'playerName': widget.playerName,
+        });
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Không thể tham gia phòng. Vui lòng kiểm tra mã phòng.')),
+          );
+        }
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to join room: $e'),
+            content: Text('Lỗi tham gia phòng: $e'),
             backgroundColor: const Color(0xFFFF2D55),
           ),
         );

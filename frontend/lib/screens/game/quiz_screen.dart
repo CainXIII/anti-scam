@@ -1,3 +1,4 @@
+import '../home_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_animate/flutter_animate.dart';
@@ -6,7 +7,7 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../providers/game_provider.dart';
-import '../../providers/auth_provider.dart';
+// import '../../providers/auth_provider.dart';
 
 class QuizScreen extends StatefulWidget {
   final String mode;
@@ -182,8 +183,8 @@ class _QuizScreenState extends State<QuizScreen>
 
           // Content
           SafeArea(
-            child: Consumer2<GameProvider, AuthProvider>(
-              builder: (context, gameProvider, authProvider, child) {
+            child: Consumer<GameProvider>(
+              builder: (context, gameProvider, child) {
                 if (gameProvider.currentQuestion == null) {
                   return const Center(
                     child: CircularProgressIndicator(color: Colors.white),
@@ -191,7 +192,6 @@ class _QuizScreenState extends State<QuizScreen>
                 }
 
                 final question = gameProvider.currentQuestion!;
-                
                 // Update correct answer when question changes
                 if (_currentQuestionIndex != gameProvider.currentQuestionIndex) {
                   _currentQuestionIndex = gameProvider.currentQuestionIndex;
@@ -201,10 +201,8 @@ class _QuizScreenState extends State<QuizScreen>
                 return Column(
                   children: [
                     // Header
-                    _buildHeader(gameProvider, authProvider),
-                    
+                    _buildHeader(gameProvider),
                     const SizedBox(height: 20),
-                    
                     // Question Card
                     Expanded(
                       child: Center(
@@ -314,7 +312,7 @@ class _QuizScreenState extends State<QuizScreen>
     );
   }
 
-  Widget _buildHeader(GameProvider gameProvider, AuthProvider authProvider) {
+  Widget _buildHeader(GameProvider gameProvider) {
     return Container(
       padding: const EdgeInsets.all(16),
       child: Row(
@@ -348,7 +346,7 @@ class _QuizScreenState extends State<QuizScreen>
                   const Icon(Icons.favorite, color: Colors.white, size: 20),
                   const SizedBox(width: 8),
                   Text(
-                    '${authProvider.user?.playAttempts ?? 0}',
+                    globalPlayerName ?? 'Player',
                     style: GoogleFonts.montserrat(
                       color: Colors.white,
                       fontSize: 18,

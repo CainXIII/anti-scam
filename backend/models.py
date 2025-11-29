@@ -39,7 +39,7 @@ class Room(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     room_code = Column(String(6), unique=True, index=True, nullable=False)  # e.g., "XYS12A"
-    creator_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    creator_id = Column(Integer, ForeignKey("users.id"), nullable=True)
     status = Column(Enum(RoomStatus), default=RoomStatus.WAITING)
     max_players = Column(Integer, default=10)
     current_players = Column(Integer, default=1)
