@@ -152,14 +152,15 @@ class _QuizScreenState extends State<QuizScreen>
           Container(
             decoration: const BoxDecoration(
               gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
                 colors: [
-                  Color(0xFF0F0F1A),
-                  Color(0xFF1A0033),
-                  Color(0xFF0F0F1A),
+                  Color(0xFF1E3A8A), // Deep blue
+                  Color(0xFF3B82F6), // Blue
+                  Color(0xFF8B5CF6), // Purple
+                  Color(0xFF6B21A8), // Deep purple
                 ],
-                stops: [0.0, 0.5, 1.0],
+                stops: [0.0, 0.33, 0.66, 1.0],
               ),
             ),
           ),
@@ -213,9 +214,9 @@ class _QuizScreenState extends State<QuizScreen>
                             children: [
                               // Question Counter
                               Text(
-                                'Question ${gameProvider.currentQuestionIndex + 1}/${gameProvider.totalQuestions}',
+                                'Câu hỏi ${gameProvider.currentQuestionIndex + 1}/${gameProvider.totalQuestions}',
                                 style: GoogleFonts.montserrat(
-                                  color: const Color(0xFFFFD60A),
+                                  color: const Color(0xFF06B6D4),
                                   fontSize: 18,
                                   fontWeight: FontWeight.bold,
                                   letterSpacing: 1,
@@ -268,20 +269,26 @@ class _QuizScreenState extends State<QuizScreen>
                               const SizedBox(height: 40),
                               
                               // Answer Options
-                              Column(
-                                children: [
-                                  _buildAnswerButton(
-                                    'A',
-                                    question.optionA,
-                                    gameProvider,
-                                  ),
-                                  const SizedBox(height: 20),
-                                  _buildAnswerButton(
-                                    'B',
-                                    question.optionB,
-                                    gameProvider,
-                                  ),
-                                ],
+                              LayoutBuilder(
+                                builder: (context, constraints) {
+                                  return Column(
+                                    children: [
+                                      _buildAnswerButton(
+                                        'A',
+                                        question.optionA,
+                                        gameProvider,
+                                        constraints.maxWidth,
+                                      ),
+                                      const SizedBox(height: 20),
+                                      _buildAnswerButton(
+                                        'B',
+                                        question.optionB,
+                                        gameProvider,
+                                        constraints.maxWidth,
+                                      ),
+                                    ],
+                                  );
+                                },
                               ),
                             ],
                           ),
@@ -299,13 +306,13 @@ class _QuizScreenState extends State<QuizScreen>
             _buildFeedbackOverlay(
               icon: Icons.check_circle,
               color: Colors.green,
-              text: 'Correct!',
+              text: 'Chính xác!',
             ),
           if (_showIncorrectFeedback)
             _buildFeedbackOverlay(
               icon: Icons.cancel,
               color: Colors.red,
-              text: 'Incorrect!',
+              text: 'Sai rồi!',
             ),
         ],
       ),
@@ -397,9 +404,14 @@ class _QuizScreenState extends State<QuizScreen>
     String option,
     String text,
     GameProvider gameProvider,
+    double maxWidth,
   ) {
     final isSelected = _selectedAnswer == option;
     final isCorrect = option == _correctAnswer;
+    
+    // Calculate button width: 1/3 screen or full width if screen is too small
+    final screenWidth = MediaQuery.of(context).size.width;
+    final buttonWidth = screenWidth < 900 ? maxWidth : screenWidth / 3;
     
     Gradient? buttonGradient;
     Color? solidColor;
@@ -410,100 +422,145 @@ class _QuizScreenState extends State<QuizScreen>
         if (isCorrect) {
           buttonGradient = const LinearGradient(
             colors: [Color(0xFF00F2FF), Color(0xFF4FACFE)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
           );
           shadowColor = const Color(0xFF00F2FF);
         } else {
           buttonGradient = const LinearGradient(
             colors: [Color(0xFFFF2D55), Color(0xFFFF6B9D)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
           );
           shadowColor = const Color(0xFFFF2D55);
         }
       } else if (isCorrect) {
-        solidColor = const Color(0xFF00F2FF).withOpacity(0.3);
+        buttonGradient = LinearGradient(
+          colors: [
+            const Color(0xFF00F2FF).withOpacity(0.3),
+            const Color(0xFF4FACFE).withOpacity(0.3),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        );
         shadowColor = const Color(0xFF00F2FF);
       } else {
-        solidColor = Colors.white.withOpacity(0.1);
+        buttonGradient = LinearGradient(
+          colors: [
+            Colors.white.withOpacity(0.1),
+            Colors.white.withOpacity(0.05),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        );
+        shadowColor = Colors.transparent;
       }
     } else {
-      solidColor = Colors.white.withOpacity(0.1);
+      // Default gradient giống home screen buttons
+      buttonGradient = LinearGradient(
+        colors: [
+          const Color(0xFF667eea).withOpacity(0.6),
+          const Color(0xFF764ba2).withOpacity(0.6),
+        ],
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+      );
+      shadowColor = const Color(0xFF5B4EFF);
     }
 
-    return GestureDetector(
-      onTap: _isAnswered ? null : () => _handleAnswer(option, gameProvider),
-      child: AnimatedContainer(
-        duration: _isAnswered ? const Duration(milliseconds: 300) : Duration.zero,
-        curve: Curves.easeInOut,
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          gradient: buttonGradient,
-          color: solidColor,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: isSelected && !_isAnswered 
-                ? const Color(0xFFFFD60A)
-                : (_isAnswered ? Colors.transparent : Colors.white.withOpacity(0.3)),
-            width: 2,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: shadowColor.withOpacity(_isAnswered && isSelected ? 0.6 : 0.2),
-              blurRadius: _isAnswered && isSelected ? 20 : 10,
-              offset: const Offset(0, 5),
-            ),
-          ],
-        ),
-        child: Row(
-          children: [
-            // Option Letter
-            Container(
-              width: 50,
-              height: 50,
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.2),
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color: Colors.white.withOpacity(0.3),
-                  width: 2,
+    return Center(
+      child: SizedBox(
+        width: buttonWidth,
+        child: GestureDetector(
+          onTap: _isAnswered ? null : () => _handleAnswer(option, gameProvider),
+          child: AnimatedContainer(
+            duration: _isAnswered ? const Duration(milliseconds: 300) : Duration.zero,
+            curve: Curves.easeInOut,
+            decoration: BoxDecoration(
+              gradient: buttonGradient,
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(
+                  color: shadowColor.withOpacity(_isAnswered && isSelected ? 0.6 : 0.6),
+                  blurRadius: 20,
+                  offset: const Offset(0, 10),
+                  spreadRadius: 2,
                 ),
-              ),
-              child: Center(
-                child: Text(
-                  option,
-                  style: GoogleFonts.montserrat(
-                    color: Colors.white,
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
+              ],
+            ),
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: _isAnswered ? null : () => _handleAnswer(option, gameProvider),
+                borderRadius: BorderRadius.circular(20),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+                  child: Row(
+                    children: [
+                      // Option Letter
+                      Container(
+                        width: 60,
+                        height: 60,
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(15),
+                          border: Border.all(
+                            color: Colors.white.withOpacity(0.3),
+                            width: 2,
+                          ),
+                        ),
+                        child: Center(
+                          child: Text(
+                            option,
+                            style: GoogleFonts.montserrat(
+                              color: Colors.white,
+                              fontSize: 32,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 20),
+                      
+                      // Option Text
+                      Expanded(
+                        child: Text(
+                          text,
+                          style: GoogleFonts.montserrat(
+                            fontSize: 20,
+                            fontWeight: FontWeight.w800,
+                            color: Colors.white,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                      ),
+                      
+                      // Feedback Icon - Only show when answered
+                      if (_isAnswered && isSelected)
+                        Container(
+                          width: 40,
+                          height: 40,
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.2),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(
+                            isCorrect ? Icons.check_circle : Icons.cancel,
+                            color: Colors.white,
+                            size: 24,
+                          ),
+                        ),
+                    ],
                   ),
                 ),
               ),
             ),
-            const SizedBox(width: 16),
-            
-            // Option Text
-            Expanded(
-              child: Text(
-                text,
-                style: GoogleFonts.montserrat(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.white,
-                ),
-              ),
-            ),
-            
-            // Feedback Icon
-            if (_isAnswered && isSelected)
-              Icon(
-                isCorrect ? Icons.check_circle : Icons.cancel,
-                color: Colors.white,
-                size: 30,
-              ),
-          ],
-        ),
+          ),
+        ).animate().then(delay: 200.ms)
+         .fadeIn(duration: 400.ms)
+         .slideX(begin: -0.1, end: 0),
       ),
-    ).animate().then(delay: 200.ms)
-     .fadeIn(duration: 400.ms)
-     .slideX(begin: -0.1, end: 0);
+    );
   }
 
   Widget _buildFeedbackOverlay({

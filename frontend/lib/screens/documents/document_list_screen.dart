@@ -3,9 +3,11 @@ import 'package:go_router/go_router.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:video_player/video_player.dart';
-import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
+import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart' as pdf;
 import 'package:flutter/foundation.dart';
-import 'dart:ui' as ui;
+import 'dart:html' as html;
+// ignore: avoid_web_libraries_in_flutter
+import 'dart:ui_web' as ui_web;
 
 import '../../models/models.dart';
 
@@ -22,10 +24,10 @@ class _DocumentListScreenState extends State<DocumentListScreen> {
   String _searchQuery = '';
   String _sortBy = 'title'; // 'title', 'type'
   final List<String> _types = [
-    'All',
-    'Image',
+    'Tất cả',
+    'Hình ảnh',
     'Video',
-    'Document',
+    'Tài liệu',
   ];
 
   final List<AssetItem> _assets = [
@@ -185,14 +187,15 @@ class _DocumentListScreenState extends State<DocumentListScreen> {
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
             colors: [
-              Color(0xFF0F0F1A),
-              Color(0xFF1A0033),
-              Color(0xFF0F0F1A),
+              Color(0xFF1E3A8A), // Deep blue
+              Color(0xFF3B82F6), // Blue
+              Color(0xFF8B5CF6), // Purple
+              Color(0xFF6B21A8), // Deep purple
             ],
-            stops: [0.0, 0.5, 1.0],
+            stops: [0.0, 0.33, 0.66, 1.0],
           ),
         ),
         child: Column(
@@ -222,7 +225,7 @@ class _DocumentListScreenState extends State<DocumentListScreen> {
                     hintStyle: GoogleFonts.montserrat(
                       color: Colors.white.withOpacity(0.5),
                     ),
-                    prefixIcon: const Icon(Icons.search, color: Color(0xFFFFD60A)),
+                    prefixIcon: const Icon(Icons.search, color: Color(0xFF06B6D4)),
                     suffixIcon: _searchQuery.isNotEmpty
                         ? IconButton(
                             icon: const Icon(Icons.clear, color: Color(0xFFFF2D55)),
@@ -277,7 +280,7 @@ class _DocumentListScreenState extends State<DocumentListScreen> {
                 child: Row(
                   children: _types.map((type) {
                     final isSelected = _selectedType == type || 
-                                     (_selectedType == null && type == 'All');
+                                     (_selectedType == null && type == 'Tất cả');
                     return Padding(
                       padding: const EdgeInsets.only(right: 8),
                       child: Container(
@@ -292,7 +295,7 @@ class _DocumentListScreenState extends State<DocumentListScreen> {
                           border: Border.all(
                             color: isSelected
                                 ? Colors.transparent
-                                : const Color(0xFFFFD60A).withOpacity(0.3),
+                                : const Color(0xFF06B6D4).withOpacity(0.3),
                             width: 1,
                           ),
                         ),
@@ -301,7 +304,7 @@ class _DocumentListScreenState extends State<DocumentListScreen> {
                           child: InkWell(
                             onTap: () {
                               setState(() {
-                                _selectedType = type == 'All' ? null : type;
+                                _selectedType = type == 'Tất cả' ? null : type;
                               });
                             },
                             borderRadius: BorderRadius.circular(20),
@@ -341,7 +344,7 @@ class _DocumentListScreenState extends State<DocumentListScreen> {
                         const Icon(
                           Icons.search_off,
                           size: 64,
-                          color: Color(0xFFFFD60A),
+                          color: Color(0xFF06B6D4),
                         ),
                         const SizedBox(height: 16),
                         Text(
@@ -412,7 +415,7 @@ class _DocumentListScreenState extends State<DocumentListScreen> {
                   height: 80,
                   decoration: BoxDecoration(
                     gradient: const LinearGradient(
-                      colors: [Color(0xFFFFD60A), Color(0xFFFFA500)],
+                      colors: [Color(0xFF06B6D4), Color(0xFF0891B2)],
                     ),
                     borderRadius: BorderRadius.circular(12),
                   ),
@@ -505,7 +508,7 @@ class _DocumentListScreenState extends State<DocumentListScreen> {
                   child: const Icon(
                     Icons.arrow_forward_ios,
                     size: 16,
-                    color: Color(0xFFFFD60A),
+                    color: Color(0xFF06B6D4),
                   ),
                 ),
               ],
@@ -526,8 +529,8 @@ class _DocumentListScreenState extends State<DocumentListScreen> {
         insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
         child: ConstrainedBox(
           constraints: BoxConstraints(
-            maxWidth: MediaQuery.of(context).size.width * 0.9,
-            maxHeight: MediaQuery.of(context).size.height * 0.8,
+            maxWidth: MediaQuery.of(context).size.width * 0.95,
+            maxHeight: MediaQuery.of(context).size.height * 0.9,
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -552,7 +555,7 @@ class _DocumentListScreenState extends State<DocumentListScreen> {
                   onPressed: () => Navigator.of(context).pop(),
                   child: Text(
                     'Đóng',
-                    style: GoogleFonts.montserrat(color: const Color(0xFFFFD60A)),
+                    style: GoogleFonts.montserrat(color: const Color(0xFF06B6D4)),
                   ),
                 ),
               ),
@@ -585,15 +588,28 @@ class _DocumentListScreenState extends State<DocumentListScreen> {
       case AssetType.video:
         return _VideoPlayerWidget(assetPath: asset.path);
       case AssetType.document:
+        if (kIsWeb) {
+          // Web: Sử dụng iframe để hiển thị PDF
+          return _WebPdfViewer(assetPath: asset.path);
+        }
+        // Mobile: Sử dụng PDF viewer bình thường
         return LayoutBuilder(
           builder: (context, constraints) {
             double maxHeight = constraints.maxHeight;
-            return SizedBox(
-              height: maxHeight > 500 ? 500 : maxHeight,
-              child: SfPdfViewer.asset(
-                asset.path,
-                enableDoubleTapZooming: true,
-                enableTextSelection: true,
+            return Container(
+              height: maxHeight,
+              width: constraints.maxWidth,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: pdf.SfPdfViewer.asset(
+                  asset.path,
+                  enableDoubleTapZooming: true,
+                  enableTextSelection: true,
+                ),
               ),
             );
           },
@@ -615,7 +631,7 @@ class _DocumentListScreenState extends State<DocumentListScreen> {
         border: Border.all(
           color: isSelected
               ? Colors.transparent
-              : const Color(0xFFFFD60A).withOpacity(0.3),
+              : const Color(0xFF06B6D4).withOpacity(0.3),
           width: 1,
         ),
       ),
@@ -721,7 +737,7 @@ class _VideoPlayerWidgetState extends State<_VideoPlayerWidget> {
     if (!_isInitialized) {
       return const Center(
         child: CircularProgressIndicator(
-          color: Color(0xFFFFD60A),
+          color: Color(0xFF06B6D4),
         ),
       );
     }
@@ -755,7 +771,7 @@ class _VideoPlayerWidgetState extends State<_VideoPlayerWidget> {
                 IconButton(
                   icon: Icon(
                     _controller.value.isPlaying ? Icons.pause : Icons.play_arrow,
-                    color: const Color(0xFFFFD60A),
+                    color: const Color(0xFF06B6D4),
                   ),
                   onPressed: () {
                     setState(() {
@@ -766,7 +782,7 @@ class _VideoPlayerWidgetState extends State<_VideoPlayerWidget> {
                   },
                 ),
                 IconButton(
-                  icon: const Icon(Icons.replay, color: Color(0xFFFFD60A)),
+                  icon: const Icon(Icons.replay, color: Color(0xFF06B6D4)),
                   onPressed: () {
                     _controller.seekTo(Duration.zero);
                     _controller.play();
@@ -777,6 +793,53 @@ class _VideoPlayerWidgetState extends State<_VideoPlayerWidget> {
           ],
         );
       },
+    );
+  }
+}
+
+class _WebPdfViewer extends StatefulWidget {
+  final String assetPath;
+
+  const _WebPdfViewer({required this.assetPath});
+
+  @override
+  State<_WebPdfViewer> createState() => _WebPdfViewerState();
+}
+
+class _WebPdfViewerState extends State<_WebPdfViewer> {
+  final String _iframeId = 'pdf-iframe-${DateTime.now().millisecondsSinceEpoch}';
+
+  @override
+  void initState() {
+    super.initState();
+    _registerIframe();
+  }
+
+  void _registerIframe() {
+    final pdfUrl = Uri.base.resolve(widget.assetPath).toString();
+    
+    // ignore: undefined_prefixed_name
+    ui_web.platformViewRegistry.registerViewFactory(
+      _iframeId,
+      (int viewId) => html.IFrameElement()
+        ..src = pdfUrl
+        ..style.border = 'none'
+        ..style.width = '100%'
+        ..style.height = '100%',
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(8),
+        child: HtmlElementView(viewType: _iframeId),
+      ),
     );
   }
 }

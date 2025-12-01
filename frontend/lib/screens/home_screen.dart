@@ -31,76 +31,83 @@ class HomeScreen extends StatelessWidget {
           decoration: BoxDecoration(
             gradient: LinearGradient(
               colors: [
-                const Color(0xFF667eea).withOpacity(0.3),
-                const Color(0xFF764ba2).withOpacity(0.3),
+                const Color(0xFF06B6D4).withOpacity(0.4),
+                const Color(0xFF0891B2).withOpacity(0.4),
               ],
             ),
             border: Border(
               bottom: BorderSide(
-                color: const Color(0xFF5B4EFF).withOpacity(0.5),
+                color: const Color(0xFF06B6D4).withOpacity(0.6),
                 width: 2,
               ),
             ),
           ),
         ),
-        title: Row(
+        title: Stack(
+          alignment: Alignment.center,
           children: [
-            Image.asset(
-              'images/AppBar_Ico_1.jpg',
-              height: 80,
-              errorBuilder: (context, error, stackTrace) => 
-                const Icon(Icons.image, size: 80, color: Colors.white),
-            ),
-            const SizedBox(width: 12),
-            
-            Image.asset(
-              'images/AppBar_Ico_2.jpg',
-              height: 80,
-              errorBuilder: (context, error, stackTrace) => 
-                const Icon(Icons.image, size: 80, color: Colors.white),
-            ),
-            const SizedBox(width: 16),
-            
-            // Main text
-            Expanded(
-              child: Text(
-                'CẢNH BÁO CÁC CHIÊU TRÒ LỪA ĐẢO QUA KHÔNG GIAN MẠNG',
-                style: GoogleFonts.montserrat(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                  height: 1.2,
+            Row(
+              children: [
+                Image.asset(
+                  'images/AppBar_Ico_1.jpg',
+                  height: 80,
+                  errorBuilder: (context, error, stackTrace) => 
+                    const Icon(Icons.image, size: 80, color: Colors.white),
                 ),
-                textAlign: TextAlign.center,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-            const SizedBox(width: 16),
-            
-            Image.asset(
-              'images/AppBar_Ico_3.jpg',
-              height: 80,
-              errorBuilder: (context, error, stackTrace) => 
-                const Icon(Icons.image, size: 80, color: Colors.white),
-            ),
-            const SizedBox(width: 16), 
-            
-            // Sub text (left aligned)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              child: Text(
-                'CÔNG AN PHƯỜNG AN HỘI TÂY\nCHI ĐOÀN CÔNG AN',
-                style: GoogleFonts.poppins(
-                  fontSize: 12,
-                  color: Colors.white,
-                  height: 1.2,
+                const SizedBox(width: 12),
+                
+                Image.asset(
+                  'images/AppBar_Ico_2.jpg',
+                  height: 80,
+                  errorBuilder: (context, error, stackTrace) => 
+                    const Icon(Icons.image, size: 80, color: Colors.white),
                 ),
-                textAlign: TextAlign.left,
-                maxLines: 2,
-              ),
+                const Spacer(),
+                
+                Image.asset(
+                  'images/AppBar_Ico_3.jpg',
+                  height: 80,
+                  errorBuilder: (context, error, stackTrace) => 
+                    const Icon(Icons.image, size: 80, color: Colors.white),
+                ),
+                const SizedBox(width: 16),
+                
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  child: Text(
+                    'CÔNG AN PHƯỜNG AN HỘI TÂY\nCHI ĐOÀN CÔNG AN',
+                    style: GoogleFonts.poppins(
+                      fontSize: 12,
+                      color: Colors.white,
+                      height: 1.2,
+                    ),
+                    textAlign: TextAlign.left,
+                    maxLines: 2,
+                  ),
+                ),
+                const SizedBox(width: 12),
+              ],
             ),
-            const SizedBox(width: 12),
+            Text(
+              'CẢNH BÁO CÁC CHIÊU TRÒ LỪA ĐẢO QUA KHÔNG GIAN MẠNG',
+              style: GoogleFonts.montserrat(
+                fontSize: 35,
+                fontWeight: FontWeight.w900,
+                color: const Color(0xFFFFD60A),
+                height: 1.2,
+                letterSpacing: 0.5,
+                shadows: [
+                  Shadow(
+                    color: Colors.black.withOpacity(0.5),
+                    offset: const Offset(0, 2),
+                    blurRadius: 4,
+                  ),
+                ],
+              ),
+              textAlign: TextAlign.center,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
           ],
         ),
         actions: [],
@@ -108,14 +115,15 @@ class HomeScreen extends StatelessWidget {
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
             colors: [
-              Color(0xFF0F0F1A), // Dark background
-              Color(0xFF1A0033), // Deep purple
-              Color(0xFF0F0F1A),
+              Color(0xFF1E3A8A), // Deep blue
+              Color(0xFF3B82F6), // Blue
+              Color(0xFF8B5CF6), // Purple
+              Color(0xFF6B21A8), // Deep purple
             ],
-            stops: [0.0, 0.5, 1.0],
+            stops: [0.0, 0.33, 0.66, 1.0],
           ),
         ),
         child: Column(
@@ -128,12 +136,12 @@ class HomeScreen extends StatelessWidget {
                       ? MediaQuery.of(context).size.width / 3 
                       : MediaQuery.of(context).size.width,
                   ),
-                  child: ListView(
-                    padding: const EdgeInsets.all(24),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       _buildMenuCard(
                         context,
-                        'Quiz Solo',
+                        'Thi một mình',
                         Icons.person_rounded,
                         Colors.blue,
                         () => _requirePlayerNameAndNavigate('/quiz?mode=single'),
@@ -167,8 +175,21 @@ class HomeScreen extends StatelessWidget {
                 ),
               ),
             ),
+            Container(
+              margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+              height: 1,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    Colors.transparent,
+                    const Color(0xFF06B6D4).withOpacity(0.6),
+                    Colors.transparent,
+                  ],
+                ),
+              ),
+            ),
             Padding(
-              padding: const EdgeInsets.all(24),
+              padding: const EdgeInsets.only(left: 24, right: 24, bottom: 24),
               child: _buildCreditSection(context),
             ),
           ],
@@ -274,60 +295,27 @@ class HomeScreen extends StatelessWidget {
 
   Widget _buildCreditSection(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.05),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: const Color(0xFF5B4EFF).withOpacity(0.3),
-          width: 1,
-        ),
-      ),
+
       child: Column(
         children: [
-          Text(
-            'Credits',
-            style: GoogleFonts.montserrat(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: const Color(0xFFFFD60A),
-            ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 12),
-          Text(
-            'Ứng dụng được phát triển bởi:\n'
-            'Công an Phường An Hội Tây\n'
-            'Chi Đoàn Công An\n\n'
-            'Version 1.0.0\n'
-            '© 2025 - Bảo vệ cộng đồng khỏi lừa đảo',
-            style: GoogleFonts.montserrat(
-              fontSize: 14,
-              color: Colors.white.withOpacity(0.8),
-              height: 1.5,
-            ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 8),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(
-                Icons.security,
-                color: const Color(0xFF00F2FF).withOpacity(0.8),
-                size: 16,
-              ),
-              const SizedBox(width: 8),
-              Text(
-                'Bảo vệ bạn khỏi các chiêu trò lừa đảo',
-                style: GoogleFonts.montserrat(
-                  fontSize: 12,
-                  color: Colors.white.withOpacity(0.6),
-                  fontStyle: FontStyle.italic,
+              Expanded(
+                child: Text(
+                  'Ứng dụng được phát triển bởi:\nCông an Phường An Hội Tây\nChi Đoàn Công An',
+                  style: GoogleFonts.montserrat(
+                    fontSize: 9,
+                    color: Colors.white.withOpacity(0.8),
+                    height: 1.5,
+                  ),
+                  textAlign: TextAlign.center,
                 ),
               ),
+              const SizedBox(width: 12),
             ],
           ),
+          const SizedBox(height: 6),
         ],
       ),
     );
