@@ -2,6 +2,7 @@ import '../widgets/player_name_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 String? globalPlayerName;
 
@@ -168,64 +169,50 @@ class HomeScreen extends StatelessWidget {
     return Row(
       children: [
         Expanded(
-          flex: 1,
           child: Row(
-            mainAxisAlignment: MainAxisAlignment.start,
             children: [
-              _buildResponsiveImage('images/AppBar_Ico_1.jpg'),
-              const SizedBox(width: 12),
-              _buildResponsiveImage('images/AppBar_Ico_2.jpg'),
+              _buildResponsiveImage('images/AppBar_Ico_1.png'),
+              const SizedBox(width: 18),
+              _buildResponsiveImage('images/AppBar_Ico_2.png'),
             ],
           ),
         ),
         Expanded(
           flex: 2,
           child: Center(
-            child: FittedBox(
-              fit: BoxFit.scaleDown,
-              child: Text(
-                'CẢNH BÁO CÁC CHIÊU TRÒ\nLỪA ĐẢO QUA KHÔNG GIAN MẠNG',
-                style: _mainTitleStyle(32),
-                textAlign: TextAlign.center,
-              ),
+            child: Text(
+              'CẢNH BÁO CÁC CHIÊU TRÒ\nLỪA ĐẢO QUA KHÔNG GIAN MẠNG',
+              style: _mainTitleStyle(30),
+              textAlign: TextAlign.center,
             ),
           ),
         ),
         Expanded(
-          flex: 1,
           child: Row(
             mainAxisAlignment: MainAxisAlignment.end,
             children: [
-              _buildResponsiveImage('images/AppBar_Ico_3.jpg'),
-              const SizedBox(width: 12),
-              Flexible(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'CÔNG AN PHƯỜNG AN HỘI TÂY',
-                      style: GoogleFonts.poppins(
-                        fontSize: 13,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                        height: 1.2,
-                      ),
-                      overflow: TextOverflow.ellipsis,
-                      maxLines: 1,
+              _buildResponsiveImage('images/AppBar_Ico_3.png'),
+              const SizedBox(width: 18),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    'CÔNG AN PHƯỜNG AN HỘI TÂY',
+                    style: GoogleFonts.poppins(
+                      fontSize: 13,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white.withOpacity(0.95),
                     ),
-                    Text(
-                      'CHI ĐOÀN CÔNG AN',
-                      style: GoogleFonts.poppins(
-                        fontSize: 12,
-                        color: Colors.white.withOpacity(0.9),
-                        height: 1.2,
-                      ),
-                      overflow: TextOverflow.ellipsis,
-                      maxLines: 1,
+                  ),
+                  Text(
+                    'CHI ĐOÀN CÔNG AN',
+                    style: GoogleFonts.poppins(
+                      fontSize: 12,
+                      color: Colors.white.withOpacity(0.85),
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ],
           ),
@@ -236,55 +223,41 @@ class HomeScreen extends StatelessWidget {
 
   Widget _buildMobileHeader() {
     return Column(
-      mainAxisSize: MainAxisSize.min,
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            _buildResponsiveImage('images/AppBar_Ico_1.jpg', size: 40),
-            const SizedBox(width: 8),
-            _buildResponsiveImage('images/AppBar_Ico_2.jpg', size: 40),
-            const SizedBox(width: 8),
-            _buildResponsiveImage('images/AppBar_Ico_3.jpg', size: 40),
+            _buildResponsiveImage('images/AppBar_Ico_1.png', size: 40),
+            const SizedBox(width: 18),
+            _buildResponsiveImage('images/AppBar_Ico_2.png', size: 40),
+            const SizedBox(width: 18),
+            _buildResponsiveImage('images/AppBar_Ico_3.png',
+                scale: 3, size: 40),
+            const SizedBox(width: 22),
           ],
         ),
         const SizedBox(height: 8),
-        FittedBox(
-          fit: BoxFit.scaleDown,
-          child: Text(
-            'CẢNH BÁO LỪA ĐẢO\nQUA KHÔNG GIAN MẠNG',
-            style: _mainTitleStyle(22),
-            textAlign: TextAlign.center,
-          ),
+        Text(
+          'CẢNH BÁO LỪA ĐẢO\nQUA KHÔNG GIAN MẠNG',
+          style: _mainTitleStyle(22),
+          textAlign: TextAlign.center,
         ),
       ],
     );
   }
 
-  Widget _buildResponsiveImage(String path, {double size = 65}) {
-    return Container(
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.2),
-            blurRadius: 4,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: ClipOval(
-        child: Image.asset(
-          path,
-          height: size,
-          width: size,
-          fit: BoxFit.cover,
-          errorBuilder: (context, error, stackTrace) =>
-              Icon(Icons.image, size: size, color: Colors.white),
-        ),
-      ),
-    );
+  Widget _buildResponsiveImage(String path,
+      {double size = 80, double scale = 1.0}) {
+    if (path.endsWith('.svg')) {
+      return Transform.scale(
+          scale: scale,
+          child: SvgPicture.asset(path, height: size, width: size));
+    }
+    return Transform.scale(
+        scale: scale,
+        child:
+            Image.asset(path, height: size, width: size, fit: BoxFit.contain));
   }
 
   TextStyle _mainTitleStyle(double fontSize) {
